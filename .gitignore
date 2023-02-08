@@ -2,3 +2,4 @@ main/conf/db_conf.py
 .idea
 **/__pycache__
 static/**
+k8s
