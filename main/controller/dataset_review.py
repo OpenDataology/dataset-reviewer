@@ -291,6 +291,26 @@ class SubmitReview(Resource):
         return marshal(response_dict, model_ret), status_code
 
 
+@auth_dataset_review_ns.route("/review_result")
+class ReviewResult(Resource):
+    @auth_dataset_review_ns.expect(UserObject.AIBOM_user)
+    @auth_dataset_review_ns.response(200, 'success', model=DatasetObject.review_result_list_resp)
+    @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
+    def get(self):
+        """通过user_id获取该用户所有已审核完成的数据集，若不填入user_id则获取所有已审批完成数据集"""
+        user_id = int(request.args.get('user_id', -1))
+
+        # Execute the specific method, and get the returned dictionary
+        response_dict = dataset_review.get_review_result_list(user_id)
+
+        # success or fail
+        status_code = 200 if response_dict['message'] == 'success' else 403
+
+        model_ret = DatasetObject.review_result_list_resp if status_code == 200 else DatasetObject.dataset_review_msg_resp
+
+        return marshal(response_dict, model_ret), status_code
+
+
 @auth_dataset_review_ns.route("/review_result_download")
 class ReviewResultDownload(Resource):
     @auth_dataset_review_ns.expect(UserObject.AIBOM_user)
