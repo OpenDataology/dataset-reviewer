@@ -333,6 +333,25 @@ def submit_pending_review_list(pending_review_list):
     return ret
 
 
+def get_review_result_list(user_id):
+    ret = dict()
+    try:
+        if user_id == -1:
+            review_result = Review_result.query.all()
+        else:
+            review_result = Review_result.query.filter_by(
+                user_id=user_id).all()
+    except Exception as e:
+        ret['message'] = 'fail'
+        ret['notification'] = e
+        return ret
+
+    ret['review_result_list'] = review_result
+    ret['message'] = 'success'
+    ret['notification'] = ''
+    return ret
+
+
 def license_upload(user_id, dataset_license_list):
     license_success_list = []
     license_fail_list = []
