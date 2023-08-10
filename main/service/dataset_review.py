@@ -9,6 +9,7 @@ import random
 import csv
 import xlrd
 import codecs
+import logging
 
 
 def review_upload(user_id, dataset_review_list):
@@ -26,7 +27,7 @@ def review_upload(user_id, dataset_review_list):
         originator = dataset_review.get("originator", [])
         # split via comma and convert to hashset
         originator = set([contributor.strip()
-                         for contributor in originator.split(",")])
+                          for contributor in originator.split(",")])
 
         # Get the potential corresponding audited dataset from the table review_result
         try:
@@ -141,7 +142,8 @@ def submit_pending_aibom_list(pending_aibom_list):
                 ret['notification'] = 'Cannot submit due to no record in pending aibom'
                 return ret
 
-            to_delete = Pending_aibom.__table__.delete().where(Pending_aibom.user_id == pending_aibom.get('user_id', '')).where(
+            to_delete = Pending_aibom.__table__.delete().where(
+                Pending_aibom.user_id == pending_aibom.get('user_id', '')).where(
                 Pending_aibom.id == pending_aibom.get('id', ''))
 
             try:
@@ -306,7 +308,8 @@ def submit_pending_review_list(pending_review_list):
             if to_delete is None:
                 continue
 
-            to_delete = Pending_review.__table__.delete().where(Pending_review.user_id == pending_review.get('user_id', '')).where(
+            to_delete = Pending_review.__table__.delete().where(
+                Pending_review.user_id == pending_review.get('user_id', '')).where(
                 Pending_review.id == pending_review.get('id', ''))
 
             try:
@@ -330,6 +333,65 @@ def submit_pending_review_list(pending_review_list):
         ret['message'] = "success"
         ret['notification'] = ""
 
+    return ret
+
+
+def get_review_result_list_for_dataset_name(dataset_name):
+    ret = dict()
+    review_result_dict = {}
+    match_dataset_review_result_list = []
+    try:
+        if dataset_name is not None \
+                and len(dataset_name) != 0:
+            match_dataset_review_result_list = list(Review_result.query.filter(
+                Review_result.name.like('%' + dataset_name + '%')).all())
+            # review_result_list = Review_result.query.all()
+            # for review_result in review_result_list:
+            #     review_result_dict[review_result.name] = review_result
+            #
+            # for dataset_name in dataset_name_list:
+            #     match_dataset_review_result = review_result_dict.get(dataset_name)
+            #     if match_dataset_review_result is None:
+            #         continue
+
+        # match_dataset_review_result_list.append(match_dataset_review_result)
+
+    except Exception as e:
+        ret['message'] = 'fail'
+        ret['notification'] = e
+        return ret
+
+    ret['review_result_list'] = match_dataset_review_result_list
+    ret['message'] = 'success'
+    ret['notification'] = ''
+    return ret
+
+
+def get_review_result_list_for_dataset_name_list(dataset_name_list):
+    ret = dict()
+    review_result_dict = {}
+    match_dataset_review_result_list = []
+    try:
+        if dataset_name_list is not None \
+                and len(dataset_name_list) != 0:
+            review_result_list = Review_result.query.all()
+            for review_result in review_result_list:
+                review_result_dict[review_result.name] = review_result
+
+            for dataset_name in dataset_name_list:
+                match_dataset_review_result = review_result_dict.get(dataset_name)
+                if match_dataset_review_result is None:
+                    continue
+                match_dataset_review_result_list.append(match_dataset_review_result)
+
+    except Exception as e:
+        ret['message'] = 'fail'
+        ret['notification'] = e
+        return ret
+
+    ret['review_result_list'] = match_dataset_review_result_list
+    ret['message'] = 'success'
+    ret['notification'] = ''
     return ret
 
 
@@ -469,7 +531,8 @@ def pending_aibom_transfer(new_aibom_info, user_id, ori_aibom_info=None):
                 "data_collection_process", None)
         if "known_biases" in new_aibom_info.keys() and new_aibom_info.get("known_biases") is not None:
             ori_aibom_info.known_biases = new_aibom_info.get("known_biases", 0)
-        if "sensitive_personal_information" in new_aibom_info.keys() and new_aibom_info.get("sensitive_personal_information") is not None:
+        if "sensitive_personal_information" in new_aibom_info.keys() and new_aibom_info.get(
+                "sensitive_personal_information") is not None:
             ori_aibom_info.sensitive_personal_information = new_aibom_info.get(
                 "sensitive_personal_information", 0)
         if "offensive_content" in new_aibom_info.keys() and new_aibom_info.get("offensive_content") is not None:
@@ -658,7 +721,8 @@ def format_check_review(pending_review):
 
 
 def file_suffix_check(cur_file):
-    if "." in cur_file.filename and (cur_file.filename.rsplit('.', 1)[1] == "csv" or cur_file.filename.rsplit('.', 1)[1] == "xlsx"):
+    if "." in cur_file.filename and (
+            cur_file.filename.rsplit('.', 1)[1] == "csv" or cur_file.filename.rsplit('.', 1)[1] == "xlsx"):
         return True
     return False
 
@@ -666,7 +730,7 @@ def file_suffix_check(cur_file):
 def file_save(user_id, cur_file, path):
     try:
         file_name = str(user_id) + "_" + str(int(time.time())) + \
-            "_" + str(random.randint(0, 2147483647)) + ".csv"
+                    "_" + str(random.randint(0, 2147483647)) + ".csv"
 
         # The absolute address of the target to save
         root_path = os.getcwd()  # The absolute path of the current project
@@ -782,7 +846,7 @@ def review_result_download(user_id, review_result_list):
     ret = dict()
 
     file_name = str(user_id) + "_" + str(int(time.time())) + \
-        "_" + str(random.randint(0, 2147483647)) + ".csv"
+                "_" + str(random.randint(0, 2147483647)) + ".csv"
     # The absolute address of the target to save
     root_path = os.getcwd()  # The absolute path of the current project
     rel_path = "/static" + "/download_by_user/"  # Relative path to the folder
@@ -792,24 +856,31 @@ def review_result_download(user_id, review_result_list):
         if not os.path.exists(abs_path):
             os.makedirs(abs_path)
 
-        with open("." + rel_path + file_name, "w") as csvfile:
+        with open("." + rel_path + file_name, "w", newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(["name", "location", "originator", "license_location", "concluded_license", "declared_license",
-                             "type", "size", "intended_use", "checksum", "data_collection_process", "known_biases",
-                             "sensitive_personal_information", "offensive_content", "review_result_initial",
-                             "is_dataset_commercially_used_initial", "is_dataset_commercially_distributed_initial",
-                             "is_product_commercially_published_initial", "right_initial",
-                             "obligation_initial", "limitation_initial", "notes_initial"])
+            writer.writerow(
+                ["name", "location", "originator", "license_location", "concluded_license", "declared_license",
+                 "type", "size", "intended_use", "checksum", "data_collection_process", "known_biases",
+                 "sensitive_personal_information", "offensive_content", "review_result_initial",
+                 "is_dataset_commercially_used_initial", "is_dataset_commercially_distributed_initial",
+                 "is_product_commercially_published_initial", "right_initial",
+                 "obligation_initial", "limitation_initial", "notes_initial"])
             for review_result in review_result_list:
-                writer.writerow([review_result.name, review_result.location, review_result.originator, review_result.license_location,
-                                review_result.concluded_license, review_result.declared_license, review_result.type, review_result.size,
-                                review_result.intended_use, review_result.checksum, review_result.data_collection_process,
-                                review_result.known_biases, review_result.sensitive_personal_information,
-                                review_result.offensive_content, review_result.review_result_initial,
-                                review_result.is_dataset_commercially_used_initial, review_result.is_dataset_commercially_distributed_initial,
-                                review_result.is_product_commercially_published_initial, review_result.right_initial,
-                                review_result.obligation_initial, review_result.limitation_initial, review_result.notes_initial])
+                writer.writerow([review_result.name, review_result.location, review_result.originator,
+                                 review_result.license_location,
+                                 review_result.concluded_license, review_result.declared_license, review_result.type,
+                                 review_result.size,
+                                 review_result.intended_use, review_result.checksum,
+                                 review_result.data_collection_process,
+                                 review_result.known_biases, review_result.sensitive_personal_information,
+                                 review_result.offensive_content, review_result.review_result_initial,
+                                 review_result.is_dataset_commercially_used_initial,
+                                 review_result.is_dataset_commercially_distributed_initial,
+                                 review_result.is_product_commercially_published_initial, review_result.right_initial,
+                                 review_result.obligation_initial, review_result.limitation_initial,
+                                 review_result.notes_initial])
     except Exception as e:
+        logging.error("review_result_download_异常了！！", e)
         ret['message'] = 'fail'
         ret['notification'] = e
         return ret
@@ -817,4 +888,19 @@ def review_result_download(user_id, review_result_list):
     ret['message'] = 'success'
     ret['download_path'] = abs_path
     ret['file_name'] = file_name
+    return ret
+
+
+def get_review_result_by_id(result_id):
+    ret = dict()
+    try:
+        review_result = Review_result.query.filter_by(id=result_id).all()
+    except Exception as e:
+        ret['message'] = 'fail'
+        ret['notification'] = e
+        return ret
+
+    ret['review_result_list'] = review_result
+    ret['message'] = 'success'
+    ret['notification'] = ''
     return ret
