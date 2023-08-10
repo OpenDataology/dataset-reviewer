@@ -342,6 +342,99 @@ class ReviewResultDownload(Resource):
             return res
 
 
+@auth_dataset_review_ns.route("/review_result_search_for_name")
+class ReviewResultSearchForName(Resource):
+    # @auth_dataset_review_ns.expect(UserObject.AIBOM_user)
+    @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
+    def post(self):
+        """通过user_id以csv形式下载所该用户所有已审核完成的数据集，若不填入user_id则默认下载所有已审批完成数据集"""
+        # user_id = json.loads(request.data).get('user_id', -1)
+        request_body_json = json.loads(request.data)
+        dataset_name = request_body_json.get('dataset_name', [""])
+        # user_id = -1 if user_id == "" or user_id is None else user_id
+
+        response_dict = dataset_review.get_review_result_list_for_dataset_name(dataset_name)
+
+        status_code = 200 if response_dict['message'] == 'success' else 403
+
+        model_ret = DatasetObject.review_result_list_resp if status_code == 200 else DatasetObject.dataset_review_msg_resp
+
+        return marshal(response_dict, model_ret), status_code
+        #
+        # if status_code == 404:
+        #     return marshal(response_dict, model_ret), status_code
+        # else:
+        #     res = make_response(send_from_directory(
+        #         response_dict['review_result_list'], response_dict['file_name'], as_attachment=True))
+        #     res.headers["Cache-Control"] = "no_store"
+        #     res.headers["max-age"] = 1
+        #     return res
+
+
+@auth_dataset_review_ns.route("/review_result_cur_row_download")
+class ReviewResultDownloadForNames(Resource):
+    @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
+    def post(self):
+        """通过user_id以csv形式下载所该用户所有已审核完成的数据集，若不填入user_id则默认下载所有已审批完成数据集"""
+        # user_id = json.loads(request.data).get('user_id', -1)
+        result_id = json.loads(request.data).get('result_id')
+        # user_id = -1 if user_id == "" or user_id is None else user_id
+
+        # Execute the specific method, and get the returned dictionary
+
+        response_dict = dataset_review.get_review_result_by_id(result_id)
+        if response_dict['message'] == 'success':
+            response_dict = dataset_review.review_result_download(
+                user_id="", review_result_list=response_dict['review_result_list'])
+
+        # success or fail
+        status_code = 200 if response_dict['message'] == 'success' else 403
+
+        model_ret = DatasetObject.review_result_list_resp if status_code == 200 else DatasetObject.dataset_review_msg_resp
+
+        if status_code == 404:
+            return marshal(response_dict, model_ret), status_code
+        else:
+            res = make_response(send_from_directory(
+                response_dict['download_path'], response_dict['file_name'], as_attachment=True))
+            res.headers["Cache-Control"] = "no_store"
+            res.headers["max-age"] = 1
+            return res
+
+
+@auth_dataset_review_ns.route("/review_result_cur_search_download")
+class ReviewResultDownloadForNames(Resource):
+    @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
+    def post(self):
+        """通过user_id以csv形式下载所该用户所有已审核完成的数据集，若不填入user_id则默认下载所有已审批完成数据集"""
+        # user_id = json.loads(request.data).get('user_id', -1)
+        request_body_json = json.loads(request.data)
+        dataset_name = request_body_json.get('dataset_name', [""])
+        # user_id = -1 if user_id == "" or user_id is None else user_id
+
+        response_dict = dataset_review.get_review_result_list_for_dataset_name(dataset_name)
+
+        status_code = 200 if response_dict['message'] == 'success' else 403
+
+        if response_dict['message'] == 'success':
+            response_dict = dataset_review.review_result_download(
+                user_id="", review_result_list=response_dict['review_result_list'])
+
+        # success or fail
+        status_code = 200 if response_dict['message'] == 'success' else 403
+
+        model_ret = DatasetObject.review_result_list_resp if status_code == 200 else DatasetObject.dataset_review_msg_resp
+
+        if status_code == 404:
+            return marshal(response_dict, model_ret), status_code
+        else:
+            res = make_response(send_from_directory(
+                response_dict['download_path'], response_dict['file_name'], as_attachment=True))
+            res.headers["Cache-Control"] = "no_store"
+            res.headers["max-age"] = 1
+            return res
+
+
 @auth_dataset_review_ns.route("/license_upload_by_file")
 class LicenseUploadByFile(Resource):
     @auth_dataset_review_ns.expect(DatasetObject.dataset_license_list_req)
