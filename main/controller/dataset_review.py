@@ -20,7 +20,12 @@ class ReviewUpload(Resource):
     @user_dataset_review_ns.response(200, 'success', model=DatasetObject.dataset_is_reviewed_list_resp)
     @user_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """数据集review上传，直接返回已review部分的数据集结论，未审核过的部分会放入pending_AIBOM中，待调用方补充AIBOM信息"""
+        """
+            Upon uploading a dataset for review, the system will immediately provide conclusions for the portions of the
+            dataset that have already undergone review. Any sections that have not yet been audited will be placed
+            in a "pending_AIBOM" category, allowing the calling party to supplement
+            AIBOM (Artificial Intelligence Bill of Materials) information as necessary.
+        """
         dataset_review_list_req = json.loads(
             request.data)  # Parse request into a dictionary
 
@@ -44,7 +49,12 @@ class ReviewUploadByFile(Resource):
     @user_dataset_review_ns.response(200, 'success', model=DatasetObject.dataset_is_reviewed_list_resp)
     @user_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """数据集review通过文件批量上传，直接返回已review部分的数据集结论，未审核过的部分会放入pending_AIBOM中，待调用方补充AIBOM信息"""
+        """
+            The dataset review process involves batch uploading through files. It will promptly provide conclusions
+            for the portions of the dataset that have undergone review. Any sections that have not yet been assessed
+            will be categorized as "pending_AIBOM," allowing the calling party to add
+            AIBOM (Artificial Intelligence Bill of Materials) information when necessary.
+        """
         user_id = request.form.get("user_id")
         dataset_review_list_req = request.files.get('dataset_review_list')
 
@@ -73,7 +83,9 @@ class PendingAIBOM(Resource):
     @user_dataset_review_ns.response(200, 'success', model=DatasetObject.pending_aibom_list_resp)
     @user_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def get(self):
-        """通过该user_id获取需要补充AIBOM信息的数据集列表"""
+        """
+            Retrieve a list of datasets requiring AIBOM information supplementation using the provided user_id.
+        """
         user_id = int(request.args.get('user_id', ''))
 
         # Execute the specific method, and get the returned dictionary
@@ -93,7 +105,9 @@ class SaveAIBOM(Resource):
     @user_dataset_review_ns.response(200, 'success', model=DatasetObject.dataset_review_msg_resp)
     @user_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """临时保存该userid所补充AIBOM信息"""
+        """
+            Temporarily store the AIBOM information supplemented by the given user_id.
+        """
         hashmap = json.loads(request.data)
         pending_aibom_list = hashmap.get('pending_aibom_list', '')
 
@@ -115,9 +129,12 @@ class SubmitAIBOM(Resource):
     @user_dataset_review_ns.response(200, 'success', model=DatasetObject.dataset_review_msg_resp)
     @user_dataset_review_ns.response(403, 'fail', model=DatasetObject.pending_aibom_list_resp)
     def post(self):
-        """提交该userid所补充AIBOM信息，
-        若必填信息格式不正确或空缺会返回对应的数据集列表，正确的部分数据集发送至review侧，并移除pending AIBOM状态.
-        格式检查：name、location、originator、license_location、type、size、intended_use、user_id不为空，concluded_license和declared_license不能同时为空。
+        """
+            Submit the AIBOM information supplemented by the provided user_id.
+            If required information is incorrectly formatted or missing, a corresponding dataset list will be returned.
+            The correct portions of datasets will be sent to the review side, and the "pending AIBOM" status will be removed.
+            Format check: name, location, originator, license_location, type, size, intended_use, and user_id cannot be empty.
+            The concluded_license and declared_license cannot be both empty simultaneously.
         """
         hashmap = json.loads(request.data)
         pending_aibom_list = hashmap.get('pending_aibom_list', '')
@@ -141,7 +158,9 @@ class RemoveAIBOM(Resource):
     @user_dataset_review_ns.response(200, 'success', model=DatasetObject.dataset_review_msg_resp)
     @user_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """支持用户在补充填写AIBOM信息时可选择删除某些数据集"""
+        """
+            Allow users to choose to delete certain datasets while supplementing AIBOM information.
+        """
         hashmap = json.loads(request.data)
         user_id = hashmap.get('user_id', "")
         pending_aibom_ids = set(hashmap.get('pending_aibom_review_ids', ''))
@@ -164,7 +183,10 @@ class GetLicense(Resource):
     @user_dataset_review_ns.response(200, 'success', model=DatasetObject.license_list_resp)
     @user_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def get(self):
-        """通过text获取满足模糊查询的license列表，若不传入text则默认获取所有license列表"""
+        """
+            Retrieve a list of licenses that match the fuzzy query based on the provided text.
+            If no text is provided, the default behavior is to retrieve the complete list of licenses.
+        """
         text = request.args.get('text', '')
 
         # Execute the specific method, and get the returned dictionary
@@ -184,7 +206,9 @@ class IsAdmin(Resource):
     @auth_dataset_review_ns.response(200, 'success', model=DatasetObject.dataset_review_msg_resp)
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """获取用户是否为admin，成功返回success，失败返回fail"""
+        """
+            Check if the user is an admin. Return "success" if successful and "fail" if unsuccessful.
+        """
         hashmap = json.loads(request.data)
 
         user_id = hashmap.get('user_id', '')
@@ -207,7 +231,9 @@ class PendingReview(Resource):
     @auth_dataset_review_ns.response(200, 'success', model=DatasetObject.pending_review_list_resp)
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def get(self):
-        """通过user_id获取所该用户待审批的数据集，若不填入user_id则获取所有待审批数据集"""
+        """
+            Retrieve datasets pending approval for the specified user_id. If no user_id is provided, retrieve all datasets pending approval.
+        """
         user_id = int(request.args.get('user_id', -1))
 
         # Execute the specific method, and get the returned dictionary
@@ -227,7 +253,9 @@ class SaveReview(Resource):
     @auth_dataset_review_ns.response(200, 'success', model=DatasetObject.dataset_review_msg_resp)
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """临时保存该审核者填写的信息"""
+        """
+            Temporarily store the information filled out by the reviewer.
+        """
         hashmap = json.loads(request.data)
         pending_review_list = hashmap.get('pending_review_list', '')
 
@@ -249,7 +277,11 @@ class RejectReview(Resource):
     @auth_dataset_review_ns.response(200, 'success', model=DatasetObject.pending_aibom_list_resp)
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """审核者判断该AIBOM补充信息不完善，拒绝review，此时状态从pending review回退到pending AIBOM，并且审核者可提示用户该数据集的AIBOM问题所在"""
+        """
+            If the reviewer determines that the AIBOM supplementary information is incomplete and decides to reject the review,
+            the status will be reverted from "pending review" back to "pending AIBOM."
+            The reviewer can also provide the user with feedback on the specific AIBOM issues related to the dataset.
+        """
         hashmap = json.loads(request.data)
         user_id = hashmap.get('user_id', "")
         pending_review_ids = hashmap.get('pending_aibom_review_ids', '')
@@ -273,7 +305,9 @@ class SubmitReview(Resource):
     @auth_dataset_review_ns.response(200, 'success', model=DatasetObject.dataset_review_msg_resp)
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.pending_review_list_resp)
     def post(self):
-        """提交该审核者的review信息从pending_review到review_result"""
+        """
+            Submit the reviewer's review information to transition the status from "pending_review" to "review_result."
+        """
         hashmap = json.loads(request.data)
         pending_review_list = hashmap.get('pending_review_list', '')
 
@@ -297,7 +331,10 @@ class ReviewResult(Resource):
     @auth_dataset_review_ns.response(200, 'success', model=DatasetObject.review_result_list_resp)
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def get(self):
-        """通过user_id获取该用户所有已审核完成的数据集，若不填入user_id则获取所有已审批完成数据集"""
+        """
+            Retrieve all datasets that have been successfully reviewed for the specified user_id. If no user_id is provided,
+            retrieve all datasets that have been approved.
+        """
         user_id = int(request.args.get('user_id', -1))
 
         # Execute the specific method, and get the returned dictionary
@@ -316,7 +353,10 @@ class ReviewResultDownload(Resource):
     @auth_dataset_review_ns.expect(UserObject.AIBOM_user)
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """通过user_id以csv形式下载所该用户所有已审核完成的数据集，若不填入user_id则默认下载所有已审批完成数据集"""
+        """
+            Download all datasets that have been successfully reviewed for the specified user_id in CSV format.
+            If no user_id is provided, download all datasets that have been approved in CSV format by default.
+        """
         user_id = json.loads(request.data).get('user_id', -1)
         user_id = -1 if user_id == "" or user_id is None else user_id
 
@@ -347,7 +387,9 @@ class ReviewResultSearchForName(Resource):
     # @auth_dataset_review_ns.expect(UserObject.AIBOM_user)
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """通过user_id以csv形式下载所该用户所有已审核完成的数据集，若不填入user_id则默认下载所有已审批完成数据集"""
+        """
+            Searching review result by dataset similar name
+        """
         # user_id = json.loads(request.data).get('user_id', -1)
         request_body_json = json.loads(request.data)
         dataset_name = request_body_json.get('dataset_name', [""])
@@ -375,7 +417,9 @@ class ReviewResultSearchForName(Resource):
 class ReviewResultDownloadForNames(Resource):
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """通过user_id以csv形式下载所该用户所有已审核完成的数据集，若不填入user_id则默认下载所有已审批完成数据集"""
+        """
+            Downloading one row review result that is you selected
+        """
         # user_id = json.loads(request.data).get('user_id', -1)
         result_id = json.loads(request.data).get('result_id')
         # user_id = -1 if user_id == "" or user_id is None else user_id
@@ -406,7 +450,9 @@ class ReviewResultDownloadForNames(Resource):
 class ReviewResultDownloadForNames(Resource):
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_review_msg_resp)
     def post(self):
-        """通过user_id以csv形式下载所该用户所有已审核完成的数据集，若不填入user_id则默认下载所有已审批完成数据集"""
+        """
+            Downloading current search review result by dataset similar name
+        """
         # user_id = json.loads(request.data).get('user_id', -1)
         request_body_json = json.loads(request.data)
         dataset_name = request_body_json.get('dataset_name', [""])
@@ -441,7 +487,11 @@ class LicenseUploadByFile(Resource):
     @auth_dataset_review_ns.response(200, 'success', model=DatasetObject.dataset_review_msg_resp)
     @auth_dataset_review_ns.response(403, 'fail', model=DatasetObject.dataset_license_list_resp)
     def post(self):
-        """License通过文件批量上传，已存在的不会重复添加，会放入fail列表中，成功的会放入success列表中，若都成功，则只返回成功提示"""
+        """
+             Upload licenses in bulk through files. Existing licenses will not be duplicated and will be placed in the "fail" list,
+             while successful uploads will be placed in the "success" list. If all uploads are successful,
+             only a success message will be returned.
+        """
         user_id = request.form.get("user_id")
         dataset_license_list_req = request.files.get('dataset_license_list')
 
